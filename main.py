@@ -97,11 +97,16 @@ def webhook_receive():
     # イベントタイプを取得
     try:
         entry = data.get('entry', [{}])[0]
-        page_id = str(entry.get('id'))  # 文字列に変換
+        raw_page_id = str(entry.get('id'))  # 文字列に変換
+        
+        # Page IDを正規化（不可視文字を完全に削除）
+        page_id = raw_page_id.strip().replace('\n', '').replace('\r', '').replace('\t', '').replace(' ', '')
+        
         changes = entry.get('changes', [])
         
         logger.info(f'📨 Webhook POST received')
-        logger.info(f'📦 Page ID: {page_id}')
+        logger.info(f'📦 Raw Page ID: {raw_page_id!r}')
+        logger.info(f'📦 Normalized Page ID: {page_id!r} (len: {len(page_id)})')
         logger.info(f'📋 Changes: {len(changes)} item(s)')
         
     except (KeyError, IndexError, AttributeError) as e:
