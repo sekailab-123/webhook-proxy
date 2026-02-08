@@ -79,7 +79,7 @@ def webhook_receive():
     # イベントタイプを取得
     try:
         entry = data.get('entry', [{}])[0]
-        page_id = entry.get('id')
+        page_id = str(entry.get('id'))  # 文字列に変換
         changes = entry.get('changes', [])
         
         logger.info(f'📨 Webhook POST received')
