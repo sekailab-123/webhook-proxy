@@ -144,6 +144,7 @@ def webhook_receive():
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             logger.info(f'📤 Forwarding to {target_url} (attempt {attempt}/{MAX_RETRIES})')
+            logger.info(f'📦 Forwarding data: {json.dumps(data, ensure_ascii=False)[:500]}...')
             
             response = requests.post(
                 target_url,
@@ -156,6 +157,7 @@ def webhook_receive():
             )
             
             logger.info(f'✅ Forward successful: {response.status_code} - {target_url}')
+            logger.info(f'📥 Response: {response.text[:200]}')
             
             # ログに詳細を記録
             if response.status_code >= 400:
