@@ -45,6 +45,8 @@ try:
         clean_value = value.strip()
         RESTAURANT_SERVERS[clean_key] = clean_value
         logger.info(f"🔍 Normalized: {key!r} -> {clean_key!r} (len: {len(clean_key)})")
+        # 各文字のコードを表示（17文字目の正体を暴く）
+        logger.info(f"🔍 Key char codes: {[ord(c) for c in clean_key]}")
     
     logger.info(f"✅ Loaded {len(RESTAURANT_SERVERS)} restaurant servers")
     
@@ -110,6 +112,8 @@ def webhook_receive():
         logger.info(f'📨 Webhook POST received')
         logger.info(f'📦 Raw Page ID: {raw_page_id!r}')
         logger.info(f'📦 Cleaned Page ID: {page_id!r} (len: {len(page_id)})')
+        # 各文字のコードを表示（17文字目の正体を暴く）
+        logger.info(f'🔍 Webhook ID char codes: {[ord(c) for c in page_id]}')
         logger.info(f'📋 Changes: {len(changes)} item(s)')
         
     except (KeyError, IndexError, AttributeError) as e:
