@@ -96,8 +96,13 @@ def webhook_receive():
     
     # 対応する店舗サーバーURLを取得
     logger.info(f'🔍 Debug: Looking for Page ID: {page_id!r} (type: {type(page_id).__name__})')
+    logger.info(f'🔍 Debug: Page ID bytes: {page_id.encode("utf-8")}')
     logger.info(f'🔍 Debug: Available Page IDs in RESTAURANT_SERVERS: {list(RESTAURANT_SERVERS.keys())}')
-    logger.info(f'🔍 Debug: RESTAURANT_SERVERS content: {RESTAURANT_SERVERS}')
+    
+    # 各キーとの完全一致チェック
+    for key in RESTAURANT_SERVERS.keys():
+        logger.info(f'🔍 Debug: Comparing {page_id!r} == {key!r}: {page_id == key}')
+        logger.info(f'🔍 Debug: Key bytes: {key.encode("utf-8")}')
     
     target_url = RESTAURANT_SERVERS.get(page_id)
     
