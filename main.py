@@ -95,10 +95,15 @@ def webhook_receive():
         return jsonify({'status': 'error', 'message': 'Page ID missing'}), 400
     
     # 対応する店舗サーバーURLを取得
+    logger.info(f'🔍 Debug: Looking for Page ID: {page_id!r} (type: {type(page_id).__name__})')
+    logger.info(f'🔍 Debug: Available Page IDs in RESTAURANT_SERVERS: {list(RESTAURANT_SERVERS.keys())}')
+    logger.info(f'🔍 Debug: RESTAURANT_SERVERS content: {RESTAURANT_SERVERS}')
+    
     target_url = RESTAURANT_SERVERS.get(page_id)
     
     if not target_url:
         logger.warning(f'⚠️ Unknown Page ID: {page_id} - Event will be ignored')
+        logger.warning(f'⚠️ Registered IDs: {list(RESTAURANT_SERVERS.keys())}')
         return jsonify({
             'status': 'ignored',
             'message': 'Unknown page - not registered in RESTAURANT_SERVERS'
