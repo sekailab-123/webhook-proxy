@@ -105,12 +105,30 @@ def webhook_receive():
     logger.info(f'🔍 Debug: Page ID bytes: {page_id.encode("utf-8")}')
     logger.info(f'🔍 Debug: Available Page IDs in RESTAURANT_SERVERS: {list(RESTAURANT_SERVERS.keys())}')
     
-    # 各キーとの完全一致チェック
-    for key in RESTAURANT_SERVERS.keys():
-        logger.info(f'🔍 Debug: Comparing {page_id!r} == {key!r}: {page_id == key}')
-        logger.info(f'🔍 Debug: Key bytes: {key.encode("utf-8")}')
+    # in演算子でのチェック
+    logger.info(f'🔍 Debug: page_id in RESTAURANT_SERVERS: {page_id in RESTAURANT_SERVERS}')
     
+    # 直接アクセス試行
+    try:
+        direct_access = RESTAURANT_SERVERS[page_id]
+        logger.info(f'🔍 Debug: Direct access successful: {direct_access}')
+    except KeyError as e:
+        logger.error(f'🔍 Debug: Direct access KeyError: {e}')
+    
+    # .get()メソッド
     target_url = RESTAURANT_SERVERS.get(page_id)
+    logger.info(f'🔍 Debug: .get() result: {target_url}')
+    
+    # 手動検索
+    if not target_url:
+        logger.info('🔍 Debug: Trying manual search...')
+        for key, value in RESTAURANT_SERVERS.items():
+            match = (key == page_id)
+            logger.info(f'🔍 Debug: Manual compare {key!r} == {page_id!r}: {match}')
+            if match:
+                target_url = value
+                logger.info(f'🔍 Debug: Manual search found: {value}')
+                break
     
     if not target_url:
         logger.warning(f'⚠️ Unknown Page ID: {page_id} - Event will be ignored')
