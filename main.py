@@ -25,8 +25,14 @@ VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN", "sekailabo_webhook_secret_2026")
 # 形式: {"facebook_page_id": "https://restaurant-bot-url.railway.app/webhook"}
 try:
     RESTAURANT_SERVERS_JSON = os.environ.get('RESTAURANT_SERVERS', '{}')
+    logger.info(f"🔍 Raw RESTAURANT_SERVERS JSON: {RESTAURANT_SERVERS_JSON!r}")
     RESTAURANT_SERVERS = json.loads(RESTAURANT_SERVERS_JSON)
     logger.info(f"✅ Loaded {len(RESTAURANT_SERVERS)} restaurant servers")
+    
+    # キーの詳細をログ出力
+    for key, value in RESTAURANT_SERVERS.items():
+        logger.info(f"🔍 Key: {key!r} (type: {type(key).__name__}, bytes: {key.encode('utf-8')})")
+        logger.info(f"🔍 Value: {value!r}")
 except json.JSONDecodeError as e:
     logger.error(f"❌ Failed to parse RESTAURANT_SERVERS: {e}")
     RESTAURANT_SERVERS = {}
