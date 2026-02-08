@@ -26,12 +26,24 @@ VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN", "sekailabo_webhook_secret_2026")
 try:
     RESTAURANT_SERVERS_JSON = os.environ.get('RESTAURANT_SERVERS', '{}')
     logger.info(f"🔍 Raw RESTAURANT_SERVERS JSON: {RESTAURANT_SERVERS_JSON!r}")
-    RESTAURANT_SERVERS = json.loads(RESTAURANT_SERVERS_JSON)
+    
+    # JSONをパース
+    raw_servers = json.loads(RESTAURANT_SERVERS_JSON)
+    
+    # キーを正規化（strip、改行削除）
+    RESTAURANT_SERVERS = {}
+    for key, value in raw_servers.items():
+        # キーから不可視文字を完全に削除
+        clean_key = key.strip().replace('\n', '').replace('\r', '').replace('\t', '').replace(' ', '')
+        clean_value = value.strip().replace('\n', '').replace('\r', '').replace('\t', '')
+        RESTAURANT_SERVERS[clean_key] = clean_value
+        logger.info(f"🔍 Normalized key: {key!r} -> {clean_key!r}")
+    
     logger.info(f"✅ Loaded {len(RESTAURANT_SERVERS)} restaurant servers")
     
     # キーの詳細をログ出力
     for key, value in RESTAURANT_SERVERS.items():
-        logger.info(f"🔍 Key: {key!r} (type: {type(key).__name__}, bytes: {key.encode('utf-8')})")
+        logger.info(f"🔍 Key: {key!r} (len: {len(key)}, bytes: {key.encode('utf-8')})")
         logger.info(f"🔍 Value: {value!r}")
 except json.JSONDecodeError as e:
     logger.error(f"❌ Failed to parse RESTAURANT_SERVERS: {e}")
