@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 import logging
 import requests
 import json
+import re
 from datetime import datetime
 
 app = Flask(__name__)
@@ -21,8 +22,15 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 # --- 設定読み込み ---
 VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN", "sekailabo_webhook_secret_2026")
 
+# ヘルパー関数: IDから数字のみを抽出（最強の正規化）
+def clean_id(input_id):
+    """数字以外の文字を完全に削除して正規化"""
+    if not input_id:
+        return ""
+    return re.sub(r"\D", "", str(input_id))
+
 # 店舗ごとのサーバーURLマッピング（環境変数から読み込み）
-# 形式: {"facebook_page_id": "https://restaurant-bot-url.railway.app/webhook"}
+# 形式: {"instagram_business_account_id": "https://restaurant-bot-url.railway.app/webhook"}
 try:
     RESTAURANT_SERVERS_JSON = os.environ.get('RESTAURANT_SERVERS', '{}')
     logger.info(f"🔍 Raw RESTAURANT_SERVERS JSON: {RESTAURANT_SERVERS_JSON!r}")
@@ -30,21 +38,16 @@ try:
     # JSONをパース
     raw_servers = json.loads(RESTAURANT_SERVERS_JSON)
     
-    # キーを正規化（strip、改行削除）
+    # キーを数字のみに正規化
     RESTAURANT_SERVERS = {}
     for key, value in raw_servers.items():
-        # キーから不可視文字を完全に削除
-        clean_key = key.strip().replace('\n', '').replace('\r', '').replace('\t', '').replace(' ', '')
-        clean_value = value.strip().replace('\n', '').replace('\r', '').replace('\t', '')
+        clean_key = clean_id(key)
+        clean_value = value.strip()
         RESTAURANT_SERVERS[clean_key] = clean_value
-        logger.info(f"🔍 Normalized key: {key!r} -> {clean_key!r}")
+        logger.info(f"🔍 Normalized: {key!r} -> {clean_key!r} (len: {len(clean_key)})")
     
     logger.info(f"✅ Loaded {len(RESTAURANT_SERVERS)} restaurant servers")
     
-    # キーの詳細をログ出力
-    for key, value in RESTAURANT_SERVERS.items():
-        logger.info(f"🔍 Key: {key!r} (len: {len(key)}, bytes: {key.encode('utf-8')})")
-        logger.info(f"🔍 Value: {value!r}")
 except json.JSONDecodeError as e:
     logger.error(f"❌ Failed to parse RESTAURANT_SERVERS: {e}")
     RESTAURANT_SERVERS = {}
@@ -97,16 +100,16 @@ def webhook_receive():
     # イベントタイプを取得
     try:
         entry = data.get('entry', [{}])[0]
-        raw_page_id = str(entry.get('id'))  # 文字列に変換
+        raw_page_id = str(entry.get('id'))
         
-        # Page IDを正規化（不可視文字を完全に削除）
-        page_id = raw_page_id.strip().replace('\n', '').replace('\r', '').replace('\t', '').replace(' ', '')
+        # Page IDを数字のみに正規化（最強の正規化）
+        page_id = clean_id(raw_page_id)
         
         changes = entry.get('changes', [])
         
         logger.info(f'📨 Webhook POST received')
         logger.info(f'📦 Raw Page ID: {raw_page_id!r}')
-        logger.info(f'📦 Normalized Page ID: {page_id!r} (len: {len(page_id)})')
+        logger.info(f'📦 Cleaned Page ID: {page_id!r} (len: {len(page_id)})')
         logger.info(f'📋 Changes: {len(changes)} item(s)')
         
     except (KeyError, IndexError, AttributeError) as e:
@@ -118,37 +121,15 @@ def webhook_receive():
         return jsonify({'status': 'error', 'message': 'Page ID missing'}), 400
     
     # 対応する店舗サーバーURLを取得
-    logger.info(f'🔍 Debug: Looking for Page ID: {page_id!r} (type: {type(page_id).__name__})')
-    logger.info(f'🔍 Debug: Page ID bytes: {page_id.encode("utf-8")}')
-    logger.info(f'🔍 Debug: Available Page IDs in RESTAURANT_SERVERS: {list(RESTAURANT_SERVERS.keys())}')
+    logger.info(f'🔍 Looking for Page ID: {page_id!r}')
+    logger.info(f'🔍 Available IDs: {list(RESTAURANT_SERVERS.keys())}')
     
-    # in演算子でのチェック
-    logger.info(f'🔍 Debug: page_id in RESTAURANT_SERVERS: {page_id in RESTAURANT_SERVERS}')
-    
-    # 直接アクセス試行
-    try:
-        direct_access = RESTAURANT_SERVERS[page_id]
-        logger.info(f'🔍 Debug: Direct access successful: {direct_access}')
-    except KeyError as e:
-        logger.error(f'🔍 Debug: Direct access KeyError: {e}')
-    
-    # .get()メソッド
     target_url = RESTAURANT_SERVERS.get(page_id)
-    logger.info(f'🔍 Debug: .get() result: {target_url}')
     
-    # 手動検索
-    if not target_url:
-        logger.info('🔍 Debug: Trying manual search...')
-        for key, value in RESTAURANT_SERVERS.items():
-            match = (key == page_id)
-            logger.info(f'🔍 Debug: Manual compare {key!r} == {page_id!r}: {match}')
-            if match:
-                target_url = value
-                logger.info(f'🔍 Debug: Manual search found: {value}')
-                break
-    
-    if not target_url:
-        logger.warning(f'⚠️ Unknown Page ID: {page_id} - Event will be ignored')
+    if target_url:
+        logger.info(f'✅ Match found: {page_id} -> {target_url}')
+    else:
+        logger.warning(f'⚠️ Unknown Page ID: {page_id}')
         logger.warning(f'⚠️ Registered IDs: {list(RESTAURANT_SERVERS.keys())}')
         return jsonify({
             'status': 'ignored',
